@@ -1,5 +1,4 @@
 using ConsultasMedicasApi.DTOs;
-using ConsultasMedicasApi.Exceptions;
 using ConsultasMedicasApi.Models;
 using ConsultasMedicasApi.Repositories;
 
@@ -37,22 +36,22 @@ public class ConsultaService : IConsultaService
     {
         // Regla: el paciente y el médico deben existir antes de insertar.
         if (!await _pacienteRepository.ExistsAsync(dto.IdPaciente))
-            throw new NotFoundException($"No existe un paciente con id {dto.IdPaciente}.");
+            throw new KeyNotFoundException($"No existe un paciente con id {dto.IdPaciente}.");
 
         if (!await _medicoRepository.ExistsAsync(dto.IdMedico))
-            throw new NotFoundException($"No existe un médico con id {dto.IdMedico}.");
+            throw new KeyNotFoundException($"No existe un médico con id {dto.IdMedico}.");
 
         // Regla: la fecha no puede ser futura.
         if (dto.FechaHora > DateTime.Now)
-            throw new ValidationException("La fecha de la consulta no puede ser futura.");
+            throw new ArgumentException("La fecha de la consulta no puede ser futura.");
 
         // Regla: campos mínimos obligatorios (motivo y diagnóstico ya se validan
         // también a nivel de DTO con [Required], esto es una segunda capa de seguridad).
         if (string.IsNullOrWhiteSpace(dto.Motivo))
-            throw new ValidationException("El motivo de la consulta es obligatorio.");
+            throw new ArgumentException("El motivo de la consulta es obligatorio.");
 
         if (string.IsNullOrWhiteSpace(dto.Diagnostico))
-            throw new ValidationException("El diagnóstico es obligatorio.");
+            throw new ArgumentException("El diagnóstico es obligatorio.");
 
         var consulta = new Consulta
         {
@@ -78,7 +77,7 @@ public class ConsultaService : IConsultaService
     {
         var fila = await _consultaRepository.GetDetalleByIdAsync(idConsulta);
         if (fila is null)
-            throw new NotFoundException($"No existe una consulta con id {idConsulta}.");
+            throw new KeyNotFoundException($"No existe una consulta con id {idConsulta}.");
 
         return MapearDetalle(fila);
     }
@@ -87,7 +86,7 @@ public class ConsultaService : IConsultaService
     {
         var paciente = await _pacienteRepository.GetByIdAsync(idPaciente);
         if (paciente is null)
-            throw new NotFoundException($"No existe un paciente con id {idPaciente}.");
+            throw new KeyNotFoundException($"No existe un paciente con id {idPaciente}.");
 
         var filas = await _consultaRepository.GetHistorialByPacienteAsync(idPaciente);
 
@@ -106,7 +105,7 @@ public class ConsultaService : IConsultaService
     {
         var medico = await _medicoRepository.GetByIdAsync(idMedico);
         if (medico is null)
-            throw new NotFoundException($"No existe un médico con id {idMedico}.");
+            throw new KeyNotFoundException($"No existe un médico con id {idMedico}.");
 
         var filas = await _consultaRepository.GetByMedicoAsync(idMedico);
 
@@ -129,14 +128,14 @@ public class ConsultaService : IConsultaService
     {
         var existente = await _consultaRepository.GetDetalleByIdAsync(idConsulta);
         if (existente is null)
-            throw new NotFoundException($"No existe una consulta con id {idConsulta}.");
+            throw new KeyNotFoundException($"No existe una consulta con id {idConsulta}.");
 
         // Regla: quien actualiza debe ser un médico real (auditoría de "quién y cuándo").
         if (!await _medicoRepository.ExistsAsync(dto.ActualizadoPor))
-            throw new NotFoundException($"No existe un médico con id {dto.ActualizadoPor} para registrar la actualización.");
+            throw new KeyNotFoundException($"No existe un médico con id {dto.ActualizadoPor} para registrar la actualización.");
 
         if (string.IsNullOrWhiteSpace(dto.Motivo) || string.IsNullOrWhiteSpace(dto.Diagnostico))
-            throw new ValidationException("Motivo y diagnóstico son obligatorios.");
+            throw new ArgumentException("Motivo y diagnóstico son obligatorios.");
 
         await _consultaRepository.UpdateAsync(idConsulta, dto);
     }

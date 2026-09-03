@@ -2,3 +2,6 @@ bin/
 obj/
 *.user
 appsettings.Development.json
+.idea/
+.vs/
+README.md

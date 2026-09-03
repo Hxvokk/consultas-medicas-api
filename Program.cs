@@ -1,4 +1,3 @@
-using ConsultasMedicasApi.Middleware;
 using ConsultasMedicasApi.Repositories;
 using ConsultasMedicasApi.Services;
 
@@ -23,8 +22,6 @@ var app = builder.Build();
 // sin depender de configurar el entorno como "Development").
 app.UseSwagger();
 app.UseSwaggerUI();
-
-app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseAuthorization();
 app.MapControllers();

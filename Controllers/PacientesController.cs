@@ -22,7 +22,14 @@ public class PacientesController : ControllerBase
     [HttpGet("{id:int}/consultas")]
     public async Task<ActionResult<HistorialPacienteDto>> Historial(int id)
     {
-        var historial = await _consultaService.ObtenerHistorialPacienteAsync(id);
-        return Ok(historial);
+        try
+        {
+            var historial = await _consultaService.ObtenerHistorialPacienteAsync(id);
+            return Ok(historial);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
     }
 }

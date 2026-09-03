@@ -22,7 +22,14 @@ public class MedicosController : ControllerBase
     [HttpGet("{id:int}/consultas")]
     public async Task<ActionResult<ConsultasPorMedicoDto>> ConsultasRealizadas(int id)
     {
-        var resultado = await _consultaService.ObtenerConsultasPorMedicoAsync(id);
-        return Ok(resultado);
+        try
+        {
+            var resultado = await _consultaService.ObtenerConsultasPorMedicoAsync(id);
+            return Ok(resultado);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
     }
 }
