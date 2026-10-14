@@ -5,6 +5,7 @@
 -- ============================================================
 
 -- Limpieza (útil si necesitas volver a correr el script mientras pruebas)
+DROP TABLE IF EXISTS usuario;
 DROP TABLE IF EXISTS consulta;
 DROP TABLE IF EXISTS medico;
 DROP TABLE IF EXISTS paciente;
@@ -34,6 +35,24 @@ CREATE TABLE medico (
     nombre          VARCHAR(150) NOT NULL,
     cedula          VARCHAR(20) NOT NULL UNIQUE,
     consultorio     INT
+);
+
+-- ------------------------------------------------------------
+-- Tabla: usuario (credenciales y relación con el perfil clínico)
+-- ------------------------------------------------------------
+CREATE TABLE usuario (
+    id_usuario      SERIAL PRIMARY KEY,
+    email           VARCHAR(254) NOT NULL UNIQUE,
+    password_hash   VARCHAR(255) NOT NULL,
+    rol             VARCHAR(20) NOT NULL,
+    id_paciente     INT UNIQUE REFERENCES paciente(id_paciente),
+    id_medico       INT UNIQUE REFERENCES medico(id_medico),
+    activo          BOOLEAN NOT NULL DEFAULT TRUE,
+    creado_en       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_usuario_perfil CHECK (
+        (rol = 'Paciente' AND id_paciente IS NOT NULL AND id_medico IS NULL) OR
+        (rol = 'Medico' AND id_medico IS NOT NULL AND id_paciente IS NULL)
+    )
 );
 
 -- ------------------------------------------------------------

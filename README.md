@@ -1,129 +1,159 @@
-# Módulo B — Consultas e historial médico
+# API de consultas médicas
 
-Implementación individual (Tarea 4) del backend + base de datos para el módulo de
-**consultas médicas**, sobre el modelo entidad-relación definido en el ejercicio de
-equipo anterior (Paciente — Consulta — Médico).
+Backend para registrar consultas y consultar el historial de pacientes. También
+incluye registro de pacientes, inicio de sesión y autenticación con JWT.
 
-## Stack
+## Tecnologías
 
-- **ASP.NET Core Web API — .NET 8**
-- **PostgreSQL en Supabase**
-- **Dapper** como micro-ORM (ver justificación abajo)
+- ASP.NET Core Web API (.NET 10)
+- PostgreSQL en Supabase
+- Dapper para las consultas SQL
+- BCrypt para proteger contraseñas
+- JWT para autenticar usuarios
 
-## 1. Preparar la base de datos en Supabase
+## Antes de iniciar
 
-1. Entra a [supabase.com](https://supabase.com), crea una cuenta si no tienes, y da clic en **New project**.
-2. Ponle un nombre (ej. `consultas-medicas`), elige una contraseña para la base de datos **y guárdala**, y selecciona la región más cercana.
-3. Cuando el proyecto termine de crearse, ve a **Project Settings → Database**. Ahí vas a encontrar el **Connection string** (elige la variante "URI" o arma la de tipo `Host=...;Port=...`).
-4. Ve a **SQL Editor → New query**, pega el contenido completo de [`Database/schema.sql`](./Database/schema.sql) y dale **Run**. Esto crea las tablas `paciente`, `medico`, `consulta` con sus llaves primarias/foráneas, y las llena con datos de prueba.
-5. Copia tu connection string y pégala en `appsettings.json`, reemplazando `TU-PROYECTO` y `TU-PASSWORD`:
+Necesitás una base de datos de Supabase y una cadena de conexión válida.
 
-   ```json
-   "Supabase": "Host=db.TU-PROYECTO.supabase.co;Port=5432;Database=postgres;Username=postgres;Password=TU-PASSWORD;SSL Mode=Require;Trust Server Certificate=true"
-   ```
+1. Creá un proyecto en [Supabase](https://supabase.com).
+2. Copiá la cadena de conexión desde **Connect**. El *Session Pooler* suele ser la
+   opción más conveniente para desarrollo local.
+3. Configurá la conexión y JWT en `appsettings.Development.json`. Este archivo está
+   ignorado por Git para no publicar contraseñas ni secretos.
 
-   > No subas `appsettings.json` con tu password real a un repositorio público. Para la entrega de clase está bien tenerlo así, pero si subes esto a GitHub, considera usar `dotnet user-secrets` o variables de entorno.
+Ejemplo de configuración local:
 
-## 2. Correr el proyecto
+```json
+{
+  "ConnectionStrings": {
+    "Supabase": "Host=TU-HOST;Port=5432;Database=postgres;Username=TU-USUARIO;Password=TU-PASSWORD;SSL Mode=Require;Trust Server Certificate=true"
+  },
+  "Jwt": {
+    "Secret": "UnaClaveLargaYPrivadaDeAlMenos32Caracteres",
+    "Issuer": "ConsultasMedicasApi",
+    "Audience": "ConsultasMedicasApi"
+  }
+}
+```
+
+> No subas este archivo ni claves reales al repositorio.
+
+### Preparar la base de datos
+
+Para una base nueva, ejecutá todo el contenido de
+[`Database/schema.sql`](./Database/schema.sql) desde el **SQL Editor** de Supabase.
+El script crea las tablas y carga datos de ejemplo.
+
+> Atención: `schema.sql` elimina y vuelve a crear las tablas. Si ya tenés datos,
+> aplicá solamente una migración que agregue la tabla `usuario`; no ejecutes el
+> script completo.
+
+## Ejecutar la API
 
 ```bash
 dotnet restore
 dotnet build
-dotnet run
+ASPNETCORE_ENVIRONMENT=Development dotnet run
 ```
 
-Al iniciar, abre en el navegador la URL que te muestre la consola (algo como
-`http://localhost:5xxx/swagger`) para ver **Swagger UI**, donde puedes probar cada
-endpoint sin necesidad de Postman.
+Abrí la URL que aparece en la consola y agregá `/swagger`. Desde Swagger se pueden
+probar todos los endpoints.
 
-## 3. Endpoints implementados
+## Endpoints principales
 
-| Requisito de la tarea | Método | Endpoint |
+| Método | Ruta | Descripción |
 |---|---|---|
-| Registrar una consulta | POST | `/api/consultas` |
-| Consultar una consulta | GET | `/api/consultas/{id}` |
-| Historial de un paciente | GET | `/api/pacientes/{id}/consultas` |
-| Identificar médico de una consulta | *(incluido dentro de la respuesta de `/api/consultas/{id}`, objeto `medico`)* | |
-| Identificar paciente de una consulta | *(incluido dentro de la respuesta de `/api/consultas/{id}`, objeto `paciente`)* | |
-| Extra: actualizar una consulta | PUT | `/api/consultas/{id}` |
-| Extra: consultas de un médico | GET | `/api/medicos/{id}/consultas` |
+| `POST` | `/api/consultas` | Registra una consulta médica. |
+| `GET` | `/api/consultas/{id}` | Obtiene una consulta con su paciente y médico. |
+| `PUT` | `/api/consultas/{id}` | Actualiza una consulta. |
+| `GET` | `/api/pacientes/{id}/consultas` | Muestra el historial de un paciente. |
+| `GET` | `/api/medicos/{id}/consultas` | Muestra las consultas realizadas por un médico. |
+| `POST` | `/api/auth/registro` | Crea un paciente y su cuenta de acceso. |
+| `POST` | `/api/auth/login` | Valida credenciales y devuelve un JWT. |
+| `GET` | `/api/auth/perfil` | Comprueba un JWT y devuelve los datos del usuario autenticado. |
 
-Los dos requisitos de "identificar" no se implementaron como endpoints aparte porque
-no tendría sentido — la forma natural de resolverlos es que la respuesta de una
-consulta siempre venga con los datos de su paciente y su médico ya incluidos (vía
-`JOIN`), en vez de que el frontend tenga que hacer una segunda llamada.
+### Ejemplo: registrar una consulta
 
-### Ejemplo — Registrar consulta
-
-```bash
-curl -X POST http://localhost:5xxx/api/consultas \
-  -H "Content-Type: application/json" \
-  -d '{
-    "idPaciente": 1,
-    "idMedico": 1,
-    "fechaHora": "2026-08-30T10:30:00",
-    "motivo": "Dolor de cabeza",
-    "sintomas": "Dolor pulsátil, sensibilidad a la luz",
-    "diagnostico": "Migraña",
-    "tratamiento": "Ibuprofeno 400mg, reposo en lugar oscuro",
-    "observaciones": null,
-    "consultorio": "101"
-  }'
+```json
+{
+  "idPaciente": 1,
+  "idMedico": 1,
+  "fechaHora": "2026-08-30T10:30:00",
+  "motivo": "Dolor de cabeza",
+  "sintomas": "Dolor pulsátil, sensibilidad a la luz",
+  "diagnostico": "Migraña",
+  "tratamiento": "Ibuprofeno 400mg y reposo",
+  "observaciones": null,
+  "consultorio": "101"
+}
 ```
 
-### Ejemplo — Historial de un paciente
+## Autenticación
 
-```bash
-curl http://localhost:5xxx/api/pacientes/1/consultas
+### Registro
+
+`POST /api/auth/registro`
+
+```json
+{
+  "nombre": "Ana Martínez",
+  "edad": 29,
+  "email": "ana@correo.com",
+  "password": "UnaClaveSegura123!"
+}
 ```
 
-## 4. Arquitectura (Controller → Service → Repository)
+El sistema crea el perfil del paciente y su cuenta en una misma transacción. La
+contraseña se almacena como hash de BCrypt, nunca como texto plano.
 
+### Inicio de sesión
+
+`POST /api/auth/login`
+
+```json
+{
+  "email": "ana@correo.com",
+  "password": "UnaClaveSegura123!"
+}
 ```
-Controllers/   → reciben el HTTP, validan lo básico (Data Annotations), llaman al Service, regresan la respuesta.
-Services/      → reglas de negocio: ¿existe el paciente? ¿existe el médico? ¿la fecha no es futura? etc.
-Repositories/  → el único lugar donde hay SQL. Abren su conexión a Postgres y usan Dapper para mapear filas a objetos.
-Models/        → clases que representan filas de la base de datos.
-DTOs/          → clases que representan lo que entra y sale por la API (no siempre son iguales a los Models).
-Exceptions/    → excepciones de negocio (NotFound, Validation, Conflict).
-Middleware/    → traduce esas excepciones a códigos HTTP (404, 400, 409) en un solo lugar.
+
+Si las credenciales son correctas, la respuesta incluye `accessToken`. El token dura
+60 minutos y contiene el identificador, correo, rol y perfil asociado al usuario.
+
+### Usar el token
+
+En Swagger, primero iniciá sesión. Después hacé clic en **Authorize** y pegá solo el
+valor de `accessToken`. Swagger agrega el encabezado automáticamente:
+
+```http
+Authorization: Bearer <accessToken>
 ```
 
-Un Controller nunca habla directo con la base de datos, y un Repository nunca decide
-si algo "está permitido" — esa separación es justo lo que pide la tarea.
+Luego podés probar `GET /api/auth/perfil`. Sin token, la API responde `401 Unauthorized`.
 
-## 5. ¿Por qué Dapper y no Entity Framework Core?
+## Organización del proyecto
 
-Se eligió **Dapper** en vez de EF Core por tres razones:
+```text
+Controllers/   Reciben las peticiones HTTP y devuelven las respuestas.
+Services/      Contienen las reglas de negocio y la generación de JWT.
+Repositories/  Ejecutan SQL con Dapper y se conectan a PostgreSQL.
+DTOs/          Definen los datos que entran y salen por la API.
+Models/        Representan las entidades usadas por la aplicación.
+Database/      Contiene el script de creación de tablas y datos de prueba.
+```
 
-1. **El alcance del ejercicio es acotado** (5 operaciones mínimas sobre una sola
-   entidad principal). EF Core brilla cuando el modelo es grande y cambia seguido
-   (gracias a las migrations); aquí el modelo ya está cerrado desde el ejercicio de
-   equipo anterior, así que esa ventaja no se aprovecha tanto.
-2. **Control explícito del SQL.** Con Dapper, cada query en `Repositories/` es SQL
-   plano que se puede leer, copiar a un cliente de Postgres y depurar directamente —
-   no hay una capa de traducción LINQ → SQL de por medio que dificulte explicar
-   "qué se ejecuta realmente" (que es justo lo que pide la tarea).
-3. **Menos "magia" para justificar.** EF Core trae change tracking, lazy loading,
-   convenciones automáticas de mapeo, etc. — todo eso es útil, pero también es más
-   difícil de explicar a fondo en una sesión de clase si no se ha usado antes. Dapper
-   es, en esencia, "ejecuta este SQL y mapea el resultado a esta clase", que es
-   mucho más directo de defender.
+La idea es que el controlador no tenga reglas de negocio ni SQL. Por ejemplo,
+`AuthController` recibe el login, `AuthService` revisa la contraseña y crea el JWT,
+y `AuthRepository` busca al usuario en Supabase.
 
-El costo de esta elección es que el mapeo objeto-relacional es manual (hay que
-escribir el SQL de cada operación a mano), y no hay migrations automáticas — los
-cambios al esquema se hacen a mano en `Database/schema.sql`.
+## ¿Por qué Dapper?
 
-## 6. Datos de prueba incluidos
+Para este proyecto se eligió Dapper porque el modelo es pequeño y las consultas son
+claras. Permite escribir el SQL de forma directa, verlo fácilmente y explicar qué se
+ejecuta en la base de datos. A cambio, el mapeo y los cambios de esquema se hacen de
+forma manual.
 
-El script de la base de datos ya inserta:
-- 3 pacientes (`id_paciente` 1, 2, 3)
-- 3 médicos (`id_medico` 1, 2, 3)
-- 3 consultas de ejemplo, para poder probar de inmediato `GET /api/consultas/1` y
-  `GET /api/pacientes/1/consultas` sin tener que registrar nada primero.
+## Alcance actual
 
-## Pendiente / fuera de alcance de este módulo
-
-- El CRUD completo de `paciente` y `medico` (registrar, listar, actualizar) es el
-  **Módulo A**, que le corresponde a otro compañero — aquí solo se leen para validar
-  existencia y mostrar su nombre dentro de una consulta.
+El proyecto cubre consultas médicas, historial y autenticación de pacientes. El CRUD
+completo de pacientes y médicos no forma parte de este módulo.

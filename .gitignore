@@ -4,4 +4,5 @@ obj/
 appsettings.Development.json
 .idea/
 .vs/
-README.md
+.DS_Store
+.atl/
