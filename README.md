@@ -13,10 +13,10 @@ incluye registro de pacientes, inicio de sesión y autenticación con JWT.
 
 ## Antes de iniciar
 
-Necesitás una base de datos de Supabase y una cadena de conexión válida.
+Necesitas una base de datos de Supabase y una cadena de conexión válida.
 
-1. Creá un proyecto en [Supabase](https://supabase.com).
-2. Copiá la cadena de conexión desde **Connect**. El *Session Pooler* suele ser la
+1. Crea un proyecto en [Supabase](https://supabase.com).
+2. Copia la cadena de conexión desde **Connect**. El *Session Pooler* suele ser la
    opción más conveniente para desarrollo local.
 3. Configurá la conexión y JWT en `appsettings.Development.json`. Este archivo está
    ignorado por Git para no publicar contraseñas ni secretos.
@@ -40,11 +40,11 @@ Ejemplo de configuración local:
 
 ### Preparar la base de datos
 
-Para una base nueva, ejecutá todo el contenido de
+Para una base nueva, ejecuta todo el contenido de
 [`Database/schema.sql`](./Database/schema.sql) desde el **SQL Editor** de Supabase.
 El script crea las tablas y carga datos de ejemplo.
 
-> Atención: `schema.sql` elimina y vuelve a crear las tablas. Si ya tenés datos,
+> Atención: `schema.sql` elimina y vuelve a crear las tablas. Si ya tienes datos,
 > aplicá solamente una migración que agregue la tabla `usuario`; no ejecutes el
 > script completo.
 
@@ -56,7 +56,7 @@ dotnet build
 ASPNETCORE_ENVIRONMENT=Development dotnet run
 ```
 
-Abrí la URL que aparece en la consola y agregá `/swagger`. Desde Swagger se pueden
+Abre la URL que aparece en la consola y agrega `/swagger`. Desde Swagger se pueden
 probar todos los endpoints.
 
 ## Endpoints principales
@@ -122,14 +122,14 @@ Si las credenciales son correctas, la respuesta incluye `accessToken`. El token 
 
 ### Usar el token
 
-En Swagger, primero iniciá sesión. Después hacé clic en **Authorize** y pegá solo el
+En Swagger, primero inicia sesión. Después haz clic en **Authorize** y pega solo el
 valor de `accessToken`. Swagger agrega el encabezado automáticamente:
 
 ```http
 Authorization: Bearer <accessToken>
 ```
 
-Luego podés probar `GET /api/auth/perfil`. Sin token, la API responde `401 Unauthorized`.
+Luego puedes probar `GET /api/auth/perfil`. Sin token, la API responde `401 Unauthorized`.
 
 ## Organización del proyecto
 
