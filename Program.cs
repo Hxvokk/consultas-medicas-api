@@ -1,13 +1,44 @@
 using System.Text;
+using ConsultasMedicasApi.Helpers.Security;
 using ConsultasMedicasApi.Repositories;
 using ConsultasMedicasApi.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
+if (args.Length == 1 && args[0] == "--genkey")
+{
+    Console.WriteLine(SecretProtector.GenerateKey());
+    return;
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Controllers + Swagger (documentación interactiva de la API)
+if (args.Length > 0 && args[0] is "--encrypt" or "--decrypt")
+{
+    if (args.Length != 2)
+        throw new ArgumentException("Uso: dotnet run -- --encrypt|--decrypt <valor>");
+
+    var commandProtector = new SecretProtector(builder.Configuration["Secrets:MasterKey"]);
+    Console.WriteLine(args[0] == "--encrypt"
+        ? commandProtector.Encrypt(args[1])
+        : commandProtector.Decrypt(args[1]));
+    return;
+}
+
+var secretProtector = new SecretProtector(builder.Configuration["Secrets:MasterKey"]);
+var decryptedSecrets = builder.Configuration.DecryptProtectedValues(secretProtector);
+Console.WriteLine($"Configuración: {decryptedSecrets} secreto(s) ENC: descifrado(s) en memoria.");
+builder.Services.AddSingleton<ISecretProtector>(secretProtector);
+
+#if DEBUG
+if (builder.Configuration.GetValue("Secrets:PrintEncryptedSnapshot", false))
+{
+    var protectedPaths = builder.Configuration.GetSection("Secrets:ProtectedPaths").Get<string[]>() ?? [];
+    SecureConfiguration.PrintEncryptedSnapshot(builder.Environment, secretProtector, protectedPaths);
+}
+#endif
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -63,7 +94,6 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
-
 builder.Services.AddScoped<IPacienteRepository, PacienteRepository>();
 builder.Services.AddScoped<IMedicoRepository, MedicoRepository>();
 builder.Services.AddScoped<IConsultaRepository, ConsultaRepository>();
@@ -73,11 +103,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 
 var app = builder.Build();
 
-// Swagger disponible siempre (útil para que el profesor lo pruebe en clase
-// sin depender de configurar el entorno como "Development").
 app.UseSwagger();
 app.UseSwaggerUI();
-
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

@@ -13,30 +13,16 @@ incluye registro de pacientes, inicio de sesión y autenticación con JWT.
 
 ## Antes de iniciar
 
-Necesitas una base de datos de Supabase y una cadena de conexión válida.
+Necesitas una base de datos activa en Supabase y acceso a la clave maestra que
+corresponde a los valores cifrados del repositorio.
 
-1. Crea un proyecto en [Supabase](https://supabase.com).
-2. Copia la cadena de conexión desde **Connect**. El *Session Pooler* suele ser la
-   opción más conveniente para desarrollo local.
-3. Configurá la conexión y JWT en `appsettings.Development.json`. Este archivo está
-   ignorado por Git para no publicar contraseñas ni secretos.
-
-Ejemplo de configuración local:
-
-```json
-{
-  "ConnectionStrings": {
-    "Supabase": "Host=TU-HOST;Port=5432;Database=postgres;Username=TU-USUARIO;Password=TU-PASSWORD;SSL Mode=Require;Trust Server Certificate=true"
-  },
-  "Jwt": {
-    "Secret": "UnaClaveLargaYPrivadaDeAlMenos32Caracteres",
-    "Issuer": "ConsultasMedicasApi",
-    "Audience": "ConsultasMedicasApi"
-  }
-}
-```
-
-> No subas este archivo ni claves reales al repositorio.
+1. Crea un proyecto en [Supabase](https://supabase.com), o reactiva el proyecto que
+   ya tienes.
+2. La cadena de conexión cifrada ya está en `appsettings.json`. Para actualizarla,
+   copia la cadena vigente desde **Connect**, cifra el nuevo valor y reemplaza el
+   correspondiente valor `ENC:`.
+3. Configura `Secrets:MasterKey` en .NET User Secrets para desarrollo. La clave debe
+   obtenerse por un canal seguro; no se incluye en el repositorio.
 
 ### Preparar la base de datos
 
@@ -45,7 +31,7 @@ Para una base nueva, ejecuta todo el contenido de
 El script crea las tablas y carga datos de ejemplo.
 
 > Atención: `schema.sql` elimina y vuelve a crear las tablas. Si ya tienes datos,
-> aplicá solamente una migración que agregue la tabla `usuario`; no ejecutes el
+> aplica solamente una migración que agregue la tabla `usuario`; no ejecutes el
 > script completo.
 
 ## Ejecutar la API
@@ -157,3 +143,24 @@ forma manual.
 
 El proyecto cubre consultas médicas, historial y autenticación de pacientes. El CRUD
 completo de pacientes y médicos no forma parte de este módulo.
+
+## Proteger secretos de configuración
+
+`appsettings.json` guarda la cadena de conexión de Supabase y la clave JWT con el
+prefijo `ENC:`. La aplicación los descifra al iniciar con AES-256-GCM. La clave
+maestra no se guarda en el repositorio: en desarrollo se obtiene de .NET User
+Secrets y en producción debe configurarse como `Secrets__MasterKey`.
+
+Comandos disponibles desde la carpeta del proyecto:
+
+```bash
+dotnet run -- --genkey
+dotnet user-secrets set "Secrets:MasterKey" "<clave-generada>"
+dotnet run -- --encrypt "<valor-sensible>"
+dotnet run -- --decrypt "ENC:<valor-cifrado>"
+```
+
+Guarda la clave maestra en un gestor seguro. Si se pierde, no será posible descifrar
+los valores existentes. Si cambia una credencial, cifra su nuevo valor y actualiza
+la entrada correspondiente en `appsettings.json`. La configuración detallada está
+en [`CIFRADO_APPSETTINGS.md`](./CIFRADO_APPSETTINGS.md).
