@@ -162,5 +162,4 @@ dotnet run -- --decrypt "ENC:<valor-cifrado>"
 
 Guarda la clave maestra en un gestor seguro. Si se pierde, no será posible descifrar
 los valores existentes. Si cambia una credencial, cifra su nuevo valor y actualiza
-la entrada correspondiente en `appsettings.json`. La configuración detallada está
-en [`CIFRADO_APPSETTINGS.md`](./CIFRADO_APPSETTINGS.md).
+la entrada correspondiente en `appsettings.json`.
