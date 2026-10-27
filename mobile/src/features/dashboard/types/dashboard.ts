@@ -1,5 +1,3 @@
-import { http } from '../api/http';
-
 export type DashboardSummary = {
   metricas: {
     totalPacientes: number;
@@ -17,8 +15,3 @@ export type DashboardSummary = {
   }[];
   alertas: { tipo: string; mensaje: string }[];
 };
-
-export async function getDashboard() {
-  const response = await http.get<DashboardSummary>('/api/dashboard/summary');
-  return response.data;
-}
