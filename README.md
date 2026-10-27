@@ -1,7 +1,7 @@
-# API de consultas médicas
+# Consultas médicas
 
-Backend para registrar consultas y consultar el historial de pacientes. También
-incluye registro de pacientes, inicio de sesión y autenticación con JWT.
+Repositorio con una API .NET para consultas médicas y una app móvil Expo/React Native.
+El backend incluye registro, inicio de sesión y autenticación con JWT.
 
 ## Tecnologías
 
@@ -10,6 +10,7 @@ incluye registro de pacientes, inicio de sesión y autenticación con JWT.
 - Dapper para las consultas SQL
 - BCrypt para proteger contraseñas
 - JWT para autenticar usuarios
+- Expo y React Native para la aplicación móvil
 
 ## Antes de iniciar
 
@@ -18,7 +19,7 @@ corresponde a los valores cifrados del repositorio.
 
 1. Crea un proyecto en [Supabase](https://supabase.com), o reactiva el proyecto que
    ya tienes.
-2. La cadena de conexión cifrada ya está en `appsettings.json`. Para actualizarla,
+2. La cadena de conexión cifrada ya está en `backend/appsettings.json`. Para actualizarla,
    copia la cadena vigente desde **Connect**, cifra el nuevo valor y reemplaza el
    correspondiente valor `ENC:`.
 3. Configura `Secrets:MasterKey` en .NET User Secrets para desarrollo. La clave debe
@@ -27,19 +28,19 @@ corresponde a los valores cifrados del repositorio.
 ### Preparar la base de datos
 
 Para una base nueva, ejecuta todo el contenido de
-[`Database/schema.sql`](./Database/schema.sql) desde el **SQL Editor** de Supabase.
-El script crea las tablas y carga datos de ejemplo.
+[`backend/Database/schema.sql`](./backend/Database/schema.sql) desde el **SQL Editor** de Supabase.
+Este es el único archivo de esquema del proyecto; se actualiza directamente cuando
+cambian las tablas.
 
-> Atención: `schema.sql` elimina y vuelve a crear las tablas. Si ya tienes datos,
-> aplica solamente una migración que agregue la tabla `usuario`; no ejecutes el
-> script completo.
+> Atención: `schema.sql` elimina y vuelve a crear las tablas y carga datos de prueba.
+> No lo ejecutes sobre una base con datos que quieras conservar.
 
 ## Ejecutar la API
 
 ```bash
-dotnet restore
-dotnet build
-ASPNETCORE_ENVIRONMENT=Development dotnet run
+dotnet restore backend/ConsultasMedicasApi.csproj
+dotnet build backend/ConsultasMedicasApi.csproj
+ASPNETCORE_ENVIRONMENT=Development dotnet run --project backend/ConsultasMedicasApi.csproj
 ```
 
 Abre la URL que aparece en la consola y agrega `/swagger`. Desde Swagger se pueden
@@ -117,15 +118,28 @@ Authorization: Bearer <accessToken>
 
 Luego puedes probar `GET /api/auth/perfil`. Sin token, la API responde `401 Unauthorized`.
 
+## Aplicación móvil
+
+La app Expo está separada del backend en `mobile/`. Las rutas permanecen en
+`mobile/src/app/` (con un grupo `(auth)` para login y registro); las pantallas y la
+lógica se organizan por funcionalidad en `mobile/src/features/`, y los recursos
+compartidos (cliente HTTP y tema) en `mobile/src/shared/`. La autenticación conecta
+el contexto global con el servicio, la API y Expo SecureStore.
+
 ## Organización del proyecto
 
 ```text
-Controllers/   Reciben las peticiones HTTP y devuelven las respuestas.
-Services/      Contienen las reglas de negocio y la generación de JWT.
-Repositories/  Ejecutan SQL con Dapper y se conectan a PostgreSQL.
-DTOs/          Definen los datos que entran y salen por la API.
-Models/        Representan las entidades usadas por la aplicación.
-Database/      Contiene el script de creación de tablas y datos de prueba.
+backend/       API .NET, configuración y base de datos.
+  Controllers/ Reciben las peticiones HTTP y devuelven las respuestas.
+  Services/    Contienen las reglas de negocio y la generación de JWT.
+  Repositories/  Ejecutan SQL con Dapper y se conectan a PostgreSQL.
+  DTOs/          Definen los datos que entran y salen por la API.
+  Models/        Representan las entidades usadas por la API.
+  Database/      Contiene el esquema SQL canónico y los datos de prueba.
+mobile/          Aplicación Expo y React Native.
+  src/app/       Rutas y layouts de Expo Router.
+  src/features/  Funcionalidades de autenticación y dashboard.
+  src/shared/    Cliente HTTP y recursos compartidos.
 ```
 
 La idea es que el controlador no tenga reglas de negocio ni SQL. Por ejemplo,
@@ -146,20 +160,20 @@ completo de pacientes y médicos no forma parte de este módulo.
 
 ## Proteger secretos de configuración
 
-`appsettings.json` guarda la cadena de conexión de Supabase y la clave JWT con el
+`backend/appsettings.json` guarda la cadena de conexión de Supabase y la clave JWT con el
 prefijo `ENC:`. La aplicación los descifra al iniciar con AES-256-GCM. La clave
 maestra no se guarda en el repositorio: en desarrollo se obtiene de .NET User
 Secrets y en producción debe configurarse como `Secrets__MasterKey`.
 
-Comandos disponibles desde la carpeta del proyecto:
+Comandos disponibles desde la raíz del repositorio:
 
 ```bash
-dotnet run -- --genkey
-dotnet user-secrets set "Secrets:MasterKey" "<clave-generada>"
-dotnet run -- --encrypt "<valor-sensible>"
-dotnet run -- --decrypt "ENC:<valor-cifrado>"
+dotnet run --project backend/ConsultasMedicasApi.csproj -- --genkey
+dotnet user-secrets set "Secrets:MasterKey" "<clave-generada>" --project backend/ConsultasMedicasApi.csproj
+dotnet run --project backend/ConsultasMedicasApi.csproj -- --encrypt "<valor-sensible>"
+dotnet run --project backend/ConsultasMedicasApi.csproj -- --decrypt "ENC:<valor-cifrado>"
 ```
 
 Guarda la clave maestra en un gestor seguro. Si se pierde, no será posible descifrar
 los valores existentes. Si cambia una credencial, cifra su nuevo valor y actualiza
-la entrada correspondiente en `appsettings.json`.
+la entrada correspondiente en `backend/appsettings.json`.
