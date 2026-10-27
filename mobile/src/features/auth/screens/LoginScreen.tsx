@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Link, Redirect } from 'expo-router';
-import { useAuth } from '../auth/AuthProvider';
-import { theme } from '../constants/theme';
+import { useAuth } from '../hooks/useAuth';
+import { theme } from '../../../shared/constants/theme';
 
 export default function LoginScreen() {
   const { signIn, status } = useAuth();

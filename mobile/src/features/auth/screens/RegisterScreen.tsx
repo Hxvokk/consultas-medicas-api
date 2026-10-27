@@ -1,8 +1,8 @@
 import { Link, Redirect } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useAuth } from '../auth/AuthProvider';
-import { theme } from '../constants/theme';
+import { useAuth } from '../hooks/useAuth';
+import { theme } from '../../../shared/constants/theme';
 
 export default function RegisterScreen() {
   const { signUp, status } = useAuth();

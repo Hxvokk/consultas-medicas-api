@@ -1,18 +1,7 @@
-import { http } from './http';
+import { http } from '../../../shared/api/http';
+import type { LoginResponse, RegistrationPayload } from '../types/auth';
 
-export type LoginResponse = {
-  accessToken: string;
-  tokenType: string;
-  expiresIn: number;
-  usuario: { idUsuario: number; email: string; rol: string };
-};
-
-export type RegistrationPayload = {
-  nombre: string;
-  edad: number;
-  email: string;
-  password: string;
-};
+export type { LoginResponse, RegistrationPayload } from '../types/auth';
 
 export const authApi = {
   async login(email: string, password: string) {
