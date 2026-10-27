@@ -1,5 +1,5 @@
 import { create, isAxiosError } from 'axios';
-import { secureStore } from '../lib/secureStore';
+import { secureStore } from '../../features/auth/storage/secureStore';
 
 const baseURL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
 

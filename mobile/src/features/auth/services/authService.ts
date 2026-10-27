@@ -1,5 +1,6 @@
-import { authApi, RegistrationPayload } from '../api/authApi';
-import { secureStore } from '../lib/secureStore';
+import { authApi } from '../api/authApi';
+import type { RegistrationPayload } from '../types/auth';
+import { secureStore } from '../storage/secureStore';
 
 export const authService = {
   async restoreSession() {

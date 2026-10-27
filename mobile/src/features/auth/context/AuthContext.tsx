@@ -1,18 +1,10 @@
 import { router } from 'expo-router';
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { RegistrationPayload } from '../api/authApi';
-import { getApiError } from '../api/http';
+import { createContext, useEffect, useMemo, useState } from 'react';
+import { getApiError } from '../../../shared/api/http';
 import { authService } from '../services/authService';
+import type { AuthContextValue, RegistrationPayload } from '../types/auth';
 
-type AuthContextValue = {
-  token: string | null;
-  status: 'checking' | 'authenticated' | 'not-authenticated';
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (payload: RegistrationPayload) => Promise<void>;
-  signOut: () => Promise<void>;
-};
-
-const AuthContext = createContext<AuthContextValue | null>(null);
+export const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: React.PropsWithChildren) {
   const [token, setToken] = useState<string | null>(null);
@@ -61,10 +53,4 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
 
   const value = useMemo(() => ({ token, status, signIn, signUp, signOut }), [token, status]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth debe usarse dentro de AuthProvider.');
-  return context;
 }

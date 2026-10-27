@@ -1,7 +1,7 @@
 import { Redirect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useAuth } from '../auth/AuthProvider';
+import { useAuth } from '../features/auth/hooks/useAuth';
 import { DashboardSummary, getDashboard } from '../lib/api';
 import { getApiError } from '../api/http';
 import { theme } from '../constants/theme';
