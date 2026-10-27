@@ -1,7 +1,11 @@
 import { Link, Redirect } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AuthField } from '../components/AuthField';
 import { useAuth } from '../hooks/useAuth';
+import { AppIcon } from '../../../shared/components/AppIcon';
+import { MedicalBrand } from '../../../shared/components/MedicalBrand';
+import { PrimaryActionButton } from '../../../shared/components/PrimaryActionButton';
 import { theme } from '../../../shared/constants/theme';
 
 export default function RegisterScreen() {
@@ -10,6 +14,7 @@ export default function RegisterScreen() {
   const [edad, setEdad] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -32,34 +37,53 @@ export default function RegisterScreen() {
     <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <View style={styles.card}>
-          <View style={styles.logo}><Text style={styles.logoText}>+</Text></View>
-          <Text style={styles.title}>Crear cuenta</Text>
-          <Text style={styles.subtitle}>Regístrate para continuar</Text>
-          <Field label="Nombre completo" value={nombre} onChangeText={setNombre} placeholder="Tu nombre" />
-          <Field label="Edad" value={edad} onChangeText={setEdad} placeholder="Edad" keyboardType="number-pad" />
-          <Field label="Correo electrónico" value={email} onChangeText={setEmail} placeholder="nombre@correo.com" keyboardType="email-address" autoCapitalize="none" />
-          <Field label="Contraseña" value={password} onChangeText={setPassword} placeholder="Mínimo 12 caracteres" secureTextEntry />
+          <View pointerEvents="none" style={styles.cardArc} />
+          <MedicalBrand title="Crear cuenta" subtitle="Regístrate para gestionar tus consultas médicas" />
+          <View style={styles.form}>
+            <AuthField label="Nombre completo" icon="person" value={nombre} onChangeText={setNombre} placeholder="Tu nombre" autoComplete="name" />
+            <AuthField label="Edad" icon="calendar" value={edad} onChangeText={setEdad} placeholder="Edad" keyboardType="number-pad" />
+            <AuthField label="Correo electrónico" icon="mail" value={email} onChangeText={setEmail} placeholder="nombre@correo.com" keyboardType="email-address" autoCapitalize="none" autoComplete="email" />
+            <AuthField
+              label="Contraseña"
+              icon="lock"
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Mínimo 12 caracteres"
+              secureTextEntry={!showPassword}
+              autoComplete="password"
+              rightElement={(
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  onPress={() => setShowPassword((visible) => !visible)}
+                  hitSlop={10}
+                >
+                  <AppIcon name={showPassword ? 'eyeSlash' : 'eye'} color={theme.colors.textSecondary} size={20} />
+                </Pressable>
+              )}
+            />
           {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
-          <Pressable accessibilityRole="button" style={({ pressed }) => [styles.button, pressed && styles.pressed, loading && styles.disabled]} onPress={submit} disabled={loading}>
-            {loading ? <ActivityIndicator color={theme.colors.onPrimary} /> : <Text style={styles.buttonText}>Crear cuenta</Text>}
-          </Pressable>
-          <Text style={styles.footer}>¿Ya tienes una cuenta? <Link href="/login" style={styles.link}>Inicia sesión</Link></Text>
+            <PrimaryActionButton label="Crear cuenta" loading={loading} onPress={() => void submit()} />
+          </View>
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>¿Ya tienes una cuenta?</Text>
+            <Link href="/login" style={styles.link}>Inicia sesión</Link>
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
-function Field(props: { label: string; value: string; onChangeText: (value: string) => void; placeholder: string; keyboardType?: 'default' | 'email-address' | 'number-pad'; autoCapitalize?: 'none' | 'sentences'; secureTextEntry?: boolean }) {
-  return <View style={styles.field}><Text style={styles.label}>{props.label}</Text><TextInput style={styles.input} value={props.value} onChangeText={props.onChangeText} placeholder={props.placeholder} placeholderTextColor={theme.colors.placeholder} keyboardType={props.keyboardType} autoCapitalize={props.autoCapitalize} secureTextEntry={props.secureTextEntry} /></View>;
-}
-
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: theme.colors.background }, scroll: { flexGrow: 1, justifyContent: 'center', padding: 24 }, loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.background },
-  card: { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderWidth: 1, borderRadius: 24, padding: 26, shadowColor: '#000000', shadowOpacity: 0.2, shadowRadius: 20, elevation: 4 },
-  logo: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.iconBackground, alignSelf: 'center', marginBottom: 14 }, logoText: { color: theme.colors.primary, fontSize: 38, fontWeight: '300', lineHeight: 44 },
-  title: { color: theme.colors.text, fontSize: 27, fontWeight: '700', textAlign: 'center' }, subtitle: { color: theme.colors.textSecondary, fontSize: 14, textAlign: 'center', marginTop: 7, marginBottom: 15 },
-  field: { marginTop: 12 }, label: { color: theme.colors.textSecondary, fontSize: 13, fontWeight: '600', marginBottom: 7 }, input: { height: 48, borderRadius: 12, borderWidth: 1, borderColor: theme.colors.border, paddingHorizontal: 14, fontSize: 14, color: theme.colors.text, backgroundColor: theme.colors.input },
-  button: { height: 52, borderRadius: 13, backgroundColor: theme.colors.primary, alignItems: 'center', justifyContent: 'center', marginTop: 22 }, buttonText: { color: theme.colors.onPrimary, fontSize: 15, fontWeight: '700' }, pressed: { opacity: 0.86 }, disabled: { opacity: 0.65 },
-  error: { color: theme.colors.error, marginTop: 12, fontSize: 13 }, footer: { color: theme.colors.textSecondary, textAlign: 'center', fontSize: 13, marginTop: 20 }, link: { color: theme.colors.primary, fontWeight: '700' },
+  screen: { flex: 1, backgroundColor: theme.colors.background },
+  scroll: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 22, paddingVertical: 28 },
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.background },
+  card: { width: '100%', maxWidth: 520, alignSelf: 'center', overflow: 'hidden', backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderWidth: 1, borderRadius: 28, paddingHorizontal: 28, paddingTop: 34, paddingBottom: 28, shadowColor: '#000000', shadowOpacity: 0.38, shadowRadius: 30, elevation: 8 },
+  cardArc: { position: 'absolute', width: 260, height: 260, top: -155, right: -105, borderRadius: 130, borderWidth: 1, borderColor: 'rgba(0, 211, 239, 0.24)' },
+  form: { marginTop: 28 },
+  error: { color: theme.colors.error, marginTop: 14, fontSize: 13, lineHeight: 18 },
+  footer: { borderTopWidth: 1, borderTopColor: theme.colors.divider, marginTop: 28, paddingTop: 23, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 8 },
+  footerText: { color: theme.colors.textSecondary, fontSize: 14 },
+  link: { color: theme.colors.primary, fontSize: 14, fontWeight: '700' },
 });

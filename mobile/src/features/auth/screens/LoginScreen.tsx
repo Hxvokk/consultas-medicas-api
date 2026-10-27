@@ -1,13 +1,18 @@
 import { useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Link, Redirect } from 'expo-router';
+import { AuthField } from '../components/AuthField';
 import { useAuth } from '../hooks/useAuth';
+import { AppIcon } from '../../../shared/components/AppIcon';
+import { MedicalBrand } from '../../../shared/components/MedicalBrand';
+import { PrimaryActionButton } from '../../../shared/components/PrimaryActionButton';
 import { theme } from '../../../shared/constants/theme';
 
 export default function LoginScreen() {
   const { signIn, status } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -25,40 +30,68 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={styles.card}>
-        <View style={styles.logo}><Text style={styles.logoText}>+</Text></View>
-        <Text style={styles.title}>Bienvenido</Text>
-        <Text style={styles.subtitle}>Inicia sesión para continuar</Text>
-        <Text style={styles.label}>Correo electrónico</Text>
-        <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="nombre@correo.com" placeholderTextColor={theme.colors.placeholder} autoCapitalize="none" keyboardType="email-address" autoComplete="email" />
-        <Text style={styles.label}>Contraseña</Text>
-        <TextInput style={styles.input} value={password} onChangeText={setPassword} placeholder="Tu contraseña" placeholderTextColor={theme.colors.placeholder} secureTextEntry autoComplete="password" onSubmitEditing={submit} />
-        {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
-        <Pressable accessibilityRole="button" style={({ pressed }) => [styles.button, pressed && styles.pressed, loading && styles.disabled]} onPress={submit} disabled={loading}>
-          {loading ? <ActivityIndicator color={theme.colors.onPrimary} /> : <Text style={styles.buttonText}>Iniciar sesión</Text>}
-        </Pressable>
-        <Text style={styles.footer}>¿No tienes una cuenta? <Link href="/register" style={styles.link}>Crear cuenta</Link></Text>
-        <Text style={styles.brand}>Consultas Médicas</Text>
-      </View>
+      <View pointerEvents="none" style={styles.glowTop} />
+      <View pointerEvents="none" style={styles.glowBottom} />
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <View style={styles.card}>
+          <View pointerEvents="none" style={styles.cardArc} />
+          <MedicalBrand subtitle="Gestiona tus citas y pacientes de forma simple y segura" />
+          <View style={styles.form}>
+            <AuthField
+              label="Correo electrónico"
+              icon="mail"
+              value={email}
+              onChangeText={setEmail}
+              placeholder="nombre@correo.com"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              autoComplete="email"
+            />
+            <AuthField
+              label="Contraseña"
+              icon="lock"
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Tu contraseña"
+              secureTextEntry={!showPassword}
+              autoComplete="password"
+              onSubmitEditing={submit}
+              rightElement={(
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  onPress={() => setShowPassword((visible) => !visible)}
+                  hitSlop={10}
+                >
+                  <AppIcon name={showPassword ? 'eyeSlash' : 'eye'} color={theme.colors.textSecondary} size={20} />
+                </Pressable>
+              )}
+            />
+            {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
+            <PrimaryActionButton label="Iniciar sesión" loading={loading} onPress={() => void submit()} />
+          </View>
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>¿Aún no estás registrado?</Text>
+            <Link href="/register" style={styles.registerLink}>Crear cuenta <Text style={styles.arrow}>→</Text></Link>
+          </View>
+        </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, justifyContent: 'center', padding: 24, backgroundColor: theme.colors.background },
+  screen: { flex: 1, backgroundColor: theme.colors.background },
+  scroll: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 22, paddingVertical: 28 },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.background },
-  card: { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderWidth: 1, borderRadius: 24, padding: 26, shadowColor: '#000000', shadowOpacity: 0.2, shadowRadius: 20, elevation: 4 },
-  logo: { width: 58, height: 58, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.iconBackground, alignSelf: 'center', marginBottom: 20 },
-  logoText: { color: theme.colors.primary, fontSize: 42, fontWeight: '300', lineHeight: 48 },
-  title: { color: theme.colors.text, fontSize: 28, fontWeight: '700', textAlign: 'center' },
-  subtitle: { color: theme.colors.textSecondary, fontSize: 15, textAlign: 'center', marginTop: 8, marginBottom: 30 },
-  label: { color: theme.colors.textSecondary, fontSize: 14, fontWeight: '600', marginBottom: 8, marginTop: 16 },
-  input: { height: 52, borderRadius: 12, borderWidth: 1, borderColor: theme.colors.border, paddingHorizontal: 14, fontSize: 15, color: theme.colors.text, backgroundColor: theme.colors.input },
-  button: { height: 54, borderRadius: 13, backgroundColor: theme.colors.primary, alignItems: 'center', justifyContent: 'center', marginTop: 26 },
-  buttonText: { color: theme.colors.onPrimary, fontSize: 16, fontWeight: '700' },
-  pressed: { opacity: 0.86 }, disabled: { opacity: 0.65 },
-  error: { color: theme.colors.error, marginTop: 12, fontSize: 13 },
-  footer: { color: theme.colors.textSecondary, textAlign: 'center', fontSize: 13, marginTop: 22 },
-  link: { color: theme.colors.primary, fontWeight: '700' },
-  brand: { color: theme.colors.textMuted, textAlign: 'center', fontSize: 12, marginTop: 18 },
+  card: { width: '100%', maxWidth: 520, alignSelf: 'center', overflow: 'hidden', backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderWidth: 1, borderRadius: 28, paddingHorizontal: 28, paddingTop: 42, paddingBottom: 30, shadowColor: '#000000', shadowOpacity: 0.38, shadowRadius: 30, elevation: 8 },
+  cardArc: { position: 'absolute', width: 300, height: 300, top: -175, right: -120, borderRadius: 150, borderWidth: 1, borderColor: 'rgba(0, 211, 239, 0.24)' },
+  glowTop: { position: 'absolute', width: 260, height: 260, top: -160, right: -120, borderRadius: 130, backgroundColor: 'rgba(0, 172, 224, 0.07)' },
+  glowBottom: { position: 'absolute', width: 240, height: 240, bottom: -150, left: -145, borderRadius: 120, backgroundColor: 'rgba(27, 105, 229, 0.07)' },
+  form: { marginTop: 42 },
+  error: { color: theme.colors.error, marginTop: 14, fontSize: 13, lineHeight: 18 },
+  footer: { borderTopWidth: 1, borderTopColor: theme.colors.divider, marginTop: 34, paddingTop: 26, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 8 },
+  footerText: { color: theme.colors.textSecondary, fontSize: 14 },
+  registerLink: { color: theme.colors.primary, fontSize: 14, fontWeight: '700' },
+  arrow: { color: theme.colors.primary, fontWeight: '700' },
 });
