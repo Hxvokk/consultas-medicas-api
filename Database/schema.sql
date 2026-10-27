@@ -6,6 +6,7 @@
 
 -- Limpieza (útil si necesitas volver a correr el script mientras pruebas)
 DROP TABLE IF EXISTS usuario;
+DROP TABLE IF EXISTS cita;
 DROP TABLE IF EXISTS consulta;
 DROP TABLE IF EXISTS medico;
 DROP TABLE IF EXISTS paciente;
@@ -34,7 +35,8 @@ CREATE TABLE medico (
     id_medico       SERIAL PRIMARY KEY,
     nombre          VARCHAR(150) NOT NULL,
     cedula          VARCHAR(20) NOT NULL UNIQUE,
-    consultorio     INT
+    consultorio     INT,
+    activo           BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 -- ------------------------------------------------------------
@@ -53,6 +55,21 @@ CREATE TABLE usuario (
         (rol = 'Paciente' AND id_paciente IS NOT NULL AND id_medico IS NULL) OR
         (rol = 'Medico' AND id_medico IS NOT NULL AND id_paciente IS NULL)
     )
+);
+
+-- ------------------------------------------------------------
+-- Tabla: cita (agenda de citas futuras)
+-- ------------------------------------------------------------
+CREATE TABLE cita (
+    id_cita         SERIAL PRIMARY KEY,
+    id_paciente     INT NOT NULL REFERENCES paciente(id_paciente),
+    id_medico       INT NOT NULL REFERENCES medico(id_medico),
+    fecha_hora      TIMESTAMP NOT NULL,
+    motivo          VARCHAR(255) NOT NULL,
+    estado          VARCHAR(20) NOT NULL DEFAULT 'Programada'
+                    CHECK (estado IN ('Programada', 'Confirmada', 'Cancelada', 'Atendida')),
+    consultorio     VARCHAR(50),
+    creado_en       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ------------------------------------------------------------
@@ -80,6 +97,7 @@ CREATE TABLE consulta (
 -- Índices para las consultas más frecuentes (historial por paciente / por médico)
 CREATE INDEX idx_consulta_paciente ON consulta(id_paciente);
 CREATE INDEX idx_consulta_medico ON consulta(id_medico);
+CREATE INDEX idx_cita_fecha_estado ON cita(fecha_hora, estado);
 
 -- ============================================================
 -- Datos de prueba
@@ -93,6 +111,11 @@ INSERT INTO medico (nombre, cedula, consultorio) VALUES
 ('Dra. Ramírez', '1234567', 101),
 ('Dr. Torres',   '7654321', 102),
 ('Dra. López',   '1122334', 103);
+
+INSERT INTO cita (id_paciente, id_medico, fecha_hora, motivo, estado, consultorio)
+SELECT 1, 1, CURRENT_TIMESTAMP + INTERVAL '1 hour', 'Cita de demostración', 'Programada', '101'
+WHERE EXISTS (SELECT 1 FROM paciente WHERE id_paciente = 1)
+  AND EXISTS (SELECT 1 FROM medico WHERE id_medico = 1);
 
 INSERT INTO consulta (id_paciente, id_medico, fecha_hora, motivo, sintomas, diagnostico, tratamiento, observaciones, consultorio) VALUES
 (1, 1, '2026-08-18 10:00:00', 'Dolor de garganta', 'Fiebre, dolor al tragar', 'Faringitis aguda', 'Paracetamol 500mg c/8h, reposo', 'Cita de seguimiento en 5 días si no mejora', '101'),
